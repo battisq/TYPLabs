@@ -2,21 +2,13 @@ package lab1.state_machine
 
 import lab1.state.State
 import lab1.state.State.*
+import utils.*
 import java.util.*
 
 class ArithmeticExpressionStateMachine : StateMachine() {
-    private val finalStates = listOf(_4, _6, _9, _10, _11)
+    val finalStates = listOf(_4, _6, _9, _10, _11)
 
-    private val digits = '0'..'9'
-    private val op = listOf('+', '*')
-    private val logarithmicSigns = listOf('+', '-')
-    private val logarithmicSymbol = listOf('e', 'E')
-    private val letters = mutableListOf('_').apply {
-        this.addAll('a'..'z')
-        this.addAll('A'..'Z')
-    }
-
-    private fun getNextState(symbol: Char, currentState: State, stack: Stack<Char>): State {
+    fun getNextState(symbol: Char, currentState: State, stack: Stack<Char>? = null): State {
         return when (currentState) {
             _0 -> when {
                 symbol == ' ' -> currentState
@@ -37,7 +29,7 @@ class ArithmeticExpressionStateMachine : StateMachine() {
             _3 -> when {
                 symbol == '(' || symbol == ' ' -> {
                     if (symbol == '(')
-                        stack.push(symbol)
+                        stack?.push(symbol)
 
                     currentState
                 }
@@ -47,13 +39,17 @@ class ArithmeticExpressionStateMachine : StateMachine() {
             }
             _4 -> when {
                 digits.contains(symbol) -> currentState
-                op.contains(symbol) -> _3
+                operation.contains(symbol) -> _3
                 symbol == '.' -> _5
-                symbol == ')' -> if (!stack.isEmpty()) {
-                    stack.pop()
+                symbol == ')' -> {
+                    if (stack != null && stack.isEmpty())
+                        return ERROR
+
+                    if (symbol == ')')
+                        stack?.pop()
+
                     _11
-                } else
-                    ERROR
+                }
                 symbol == ' ' -> _11
                 else -> ERROR
             }
@@ -63,14 +59,14 @@ class ArithmeticExpressionStateMachine : StateMachine() {
             }
             _6 -> when {
                 digits.contains(symbol) -> currentState
-                op.contains(symbol) -> _3
+                operation.contains(symbol) -> _3
                 logarithmicSymbol.contains(symbol) -> _7
                 symbol == ')' -> {
-                    if (stack.isEmpty())
+                    if (stack != null && stack.isEmpty())
                         return ERROR
 
                     if (symbol == ')')
-                        stack.pop()
+                        stack?.pop()
 
                     _11
                 }
@@ -87,13 +83,13 @@ class ArithmeticExpressionStateMachine : StateMachine() {
             }
             _9 -> when {
                 digits.contains(symbol) -> currentState
-                op.contains(symbol) -> _3
+                operation.contains(symbol) -> _3
                 symbol == ')' -> {
-                    if (stack.isEmpty())
+                    if (stack != null && stack.isEmpty())
                         return ERROR
 
                     if (symbol == ')')
-                        stack.pop()
+                        stack?.pop()
 
                     _11
                 }
@@ -103,30 +99,30 @@ class ArithmeticExpressionStateMachine : StateMachine() {
             _10 -> when {
                 digits.contains(symbol) || letters.contains(symbol) -> currentState
                 symbol == ')' -> {
-                    if (stack.isEmpty())
+                    if (stack != null && stack.isEmpty())
                         return ERROR
 
                     if (symbol == ')')
-                        stack.pop()
+                        stack?.pop()
 
                     _11
                 }
                 symbol == ' ' -> _11
-                op.contains(symbol) -> _3
+                operation.contains(symbol) -> _3
                 else -> ERROR
             }
             _11 -> when {
                 symbol == ')' -> {
-                    if (stack.isEmpty())
+                    if (stack != null && stack.isEmpty())
                         return ERROR
 
                     if (symbol == ')')
-                        stack.pop()
+                        stack?.pop()
 
                     currentState
                 }
                 symbol == ' ' -> currentState
-                op.contains(symbol) -> _3
+                operation.contains(symbol) -> _3
                 else -> ERROR
             }
             ERROR -> throw IllegalStateException("The state is already FAULT")
