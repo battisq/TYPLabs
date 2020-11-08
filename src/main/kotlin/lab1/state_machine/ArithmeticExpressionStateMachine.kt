@@ -1,153 +1,112 @@
 package lab1.state_machine
 
-import lab1.state.State
-import lab1.state.State.*
-import utils.*
+import lab1.state_machine.State.*
+import lab1.state_machine.StateTransition.TransitionState.*
 import java.util.*
 
-class ArithmeticExpressionStateMachine : StateMachine() {
-    val finalStates = listOf(_4, _6, _9, _10, _11)
+class ArithmeticExpressionStateMachine: StateMachine() {
+    var stack: Stack<Char> = Stack()
+        private set
+    var currentState: State = _0
+        private set
 
-    fun getNextState(symbol: Char, currentState: State, stack: Stack<Char>? = null): State {
-        return when (currentState) {
-            _0 -> when {
-                symbol == ' ' -> currentState
-                letters.contains(symbol) -> _1
-                else -> ERROR
-            }
-            _1 -> when {
-                letters.contains(symbol) || digits.contains(symbol) -> currentState
-                symbol == '=' -> _3
-                symbol == ' ' -> _2
-                else -> ERROR
-            }
-            _2 -> when (symbol) {
-                ' ' -> currentState
-                '=' -> _3
-                else -> ERROR
-            }
-            _3 -> when {
-                symbol == '(' || symbol == ' ' -> {
-                    if (symbol == '(')
-                        stack?.push(symbol)
+    override val transitions = HashMap<StateTransition, DeltaCell>().apply {
+        this[StateTransition(_0, letters, TABLE)] = DeltaCell(_1, stack)
+        this[StateTransition(_0, whitespace, TABLE)] = DeltaCell(_0, stack)
 
-                    currentState
-                }
-                digits.contains(symbol) -> _4
-                letters.contains(symbol) -> _10
-                else -> ERROR
-            }
-            _4 -> when {
-                digits.contains(symbol) -> currentState
-                operation.contains(symbol) -> _3
-                symbol == '.' -> _5
-                symbol == ')' -> {
-                    if (stack != null && stack.isEmpty())
-                        return ERROR
+        this[StateTransition(_1, letters, TABLE)] = DeltaCell(_1, stack)
+        this[StateTransition(_1, digits, TABLE)] = DeltaCell(_1, stack)
+        this[StateTransition(_1, whitespace, TABLE)] = DeltaCell(_2, stack)
+        this[StateTransition(_1, equal, TABLE)] = DeltaCell(_3, stack)
 
-                    if (symbol == ')')
-                        stack?.pop()
+        this[StateTransition(_2, whitespace, TABLE)] = DeltaCell(_2, stack)
+        this[StateTransition(_2, equal, TABLE)] = DeltaCell(_3, stack)
 
-                    _11
-                }
-                symbol == ' ' -> _11
-                else -> ERROR
-            }
-            _5 -> when {
-                digits.contains(symbol) -> _6
-                else -> ERROR
-            }
-            _6 -> when {
-                digits.contains(symbol) -> currentState
-                operation.contains(symbol) -> _3
-                logarithmicSymbol.contains(symbol) -> _7
-                symbol == ')' -> {
-                    if (stack != null && stack.isEmpty())
-                        return ERROR
+        this[StateTransition(_3, letters, TABLE)] = DeltaCell(_10, stack)
+        this[StateTransition(_3, digits, TABLE)] = DeltaCell(_4, stack)
+        this[StateTransition(_3, whitespace, TABLE)] = DeltaCell(_3, stack)
+        this[StateTransition(_3, openingBracket, TABLE)] = DeltaCell(_3, stack) {
+            stack.push(openingBracket[0])
+        }
 
-                    if (symbol == ')')
-                        stack?.pop()
+        this[StateTransition(_4, digits, TABLE)] = DeltaCell(_4, stack)
+        this[StateTransition(_4, whitespace, TABLE)] = DeltaCell(_11, stack)
+        this[StateTransition(_4, operation, TABLE)] = DeltaCell(_3, stack)
+        this[StateTransition(_4, point, TABLE)] = DeltaCell(_5, stack)
+        this[StateTransition(_4, end, TABLE)] = DeltaCell(HALT, stack)
+        this[StateTransition(_4, closingBracket, TABLE)] = DeltaCell(_11, stack) {
+            if (stack.isEmpty())
+                currentState = ERROR
+            else
+                stack.pop()
+        }
 
-                    _11
-                }
-                symbol == ' ' -> _11
-                else -> ERROR
-            }
-            _7 -> when {
-                logarithmicSigns.contains(symbol) -> _8
-                else -> ERROR
-            }
-            _8 -> when {
-                digits.contains(symbol) -> _9
-                else -> ERROR
-            }
-            _9 -> when {
-                digits.contains(symbol) -> currentState
-                operation.contains(symbol) -> _3
-                symbol == ')' -> {
-                    if (stack != null && stack.isEmpty())
-                        return ERROR
+        this[StateTransition(_5, digits, TABLE)] = DeltaCell(_6, stack)
 
-                    if (symbol == ')')
-                        stack?.pop()
+        this[StateTransition(_6, digits, TABLE)] = DeltaCell(_6, stack)
+        this[StateTransition(_6, whitespace, TABLE)] = DeltaCell(_11, stack)
+        this[StateTransition(_6, operation, TABLE)] = DeltaCell(_3, stack)
+        this[StateTransition(_6, logarithmicSymbol, TABLE)] = DeltaCell(_7, stack)
+        this[StateTransition(_6, end, TABLE)] = DeltaCell(HALT, stack)
+        this[StateTransition(_6, closingBracket, TABLE)] = DeltaCell(_11, stack) {
+            if (stack.isEmpty())
+                currentState = ERROR
+            else
+                stack.pop()
+        }
 
-                    _11
-                }
-                symbol == ' ' -> _11
-                else -> ERROR
-            }
-            _10 -> when {
-                digits.contains(symbol) || letters.contains(symbol) -> currentState
-                symbol == ')' -> {
-                    if (stack != null && stack.isEmpty())
-                        return ERROR
+        this[StateTransition(_7, logarithmicSigns, TABLE)] = DeltaCell(_8, stack)
 
-                    if (symbol == ')')
-                        stack?.pop()
+        this[StateTransition(_8, digits, TABLE)] = DeltaCell(_9, stack)
 
-                    _11
-                }
-                symbol == ' ' -> _11
-                operation.contains(symbol) -> _3
-                else -> ERROR
-            }
-            _11 -> when {
-                symbol == ')' -> {
-                    if (stack != null && stack.isEmpty())
-                        return ERROR
+        this[StateTransition(_9, digits, TABLE)] = DeltaCell(_9, stack)
+        this[StateTransition(_9, whitespace, TABLE)] = DeltaCell(_11, stack)
+        this[StateTransition(_9, operation, TABLE)] = DeltaCell(_3, stack)
+        this[StateTransition(_9, end, TABLE)] = DeltaCell(HALT, stack)
+        this[StateTransition(_9, closingBracket, TABLE)] = DeltaCell(_11, stack) {
+            if (stack.isEmpty())
+                currentState = ERROR
+            else
+                stack.pop()
+        }
 
-                    if (symbol == ')')
-                        stack?.pop()
+        this[StateTransition(_10, letters, TABLE)] = DeltaCell(_10, stack)
+        this[StateTransition(_10, digits, TABLE)] = DeltaCell(_10, stack)
+        this[StateTransition(_10, whitespace, TABLE)] = DeltaCell(_11, stack)
+        this[StateTransition(_10, operation, TABLE)] = DeltaCell(_3, stack)
+        this[StateTransition(_10, end, TABLE)] = DeltaCell(HALT, stack)
+        this[StateTransition(_10, closingBracket, TABLE)] = DeltaCell(_11, stack) {
+            if (stack.isEmpty())
+                currentState = ERROR
+            else
+                stack.pop()
+        }
 
-                    currentState
-                }
-                symbol == ' ' -> currentState
-                operation.contains(symbol) -> _3
-                else -> ERROR
-            }
-            ERROR -> throw IllegalStateException("The state is already FAULT")
+        this[StateTransition(_11, whitespace, TABLE)] = DeltaCell(_11, stack)
+        this[StateTransition(_11, operation, TABLE)] = DeltaCell(_3, stack)
+        this[StateTransition(_11, end, TABLE)] = DeltaCell(HALT, stack)
+        this[StateTransition(_11, closingBracket, TABLE)] = DeltaCell(_11, stack) {
+            if (stack.isEmpty())
+                currentState = ERROR
+            else
+                stack.pop()
         }
     }
 
-    override fun getResultState(expression: String): Result {
-        val exp = expression.replace("\n", "")
-        var resultState = Result.ERROR
-        val stack: Stack<Char> = Stack()
-        var currentState = _0
+    override fun getNext(symbol: Char): State {
+        return getNextDeltaCell(symbol).state
+    }
 
-        for ((index, el) in exp.withIndex()) {
-            currentState = getNextState(el, currentState, stack)
+    override fun getNextDeltaCell(symbol: Char): DeltaCell {
+        val transition = StateTransition(currentState, listOf(symbol), INPUT)
+        return transitions.getOrDefault(transition, DeltaCell(ERROR))
+    }
 
-            if (currentState == ERROR)
-                break
-
-            if (index == exp.length - 1
-                && stack.empty()
-                && finalStates.contains(currentState)
-            )
-                resultState = Result.HALT
-        }
-
-        return resultState
+    override fun moveNext(symbol: Char): State {
+        val nextDeltaCell = getNextDeltaCell(symbol)
+        currentState = nextDeltaCell.state
+        nextDeltaCell.action?.invoke()
+        return currentState
     }
 }
+

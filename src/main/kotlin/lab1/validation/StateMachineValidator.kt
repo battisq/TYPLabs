@@ -1,12 +1,21 @@
 package lab1.validation
 
+import lab1.state_machine.State
 import lab1.state_machine.ArithmeticExpressionStateMachine
-import lab1.state_machine.StateMachine
-import lab1.validation.Validator
+import lab1.state_machine.end
 
-class ArithmeticExpressionStateMachineValidator : Validator {
-    override fun validationExpression(expression: String): Boolean {
-        val stateMachine: StateMachine = ArithmeticExpressionStateMachine()
-        return stateMachine.getResultState(expression) == StateMachine.Result.HALT
+class StateMachineValidator : Validator {
+    override fun isExpression(expression: String): Boolean {
+        val stateMachine = ArithmeticExpressionStateMachine()
+        val haltExpression = "${expression}${end[0]}"
+
+        for (el in haltExpression) {
+            stateMachine.moveNext(el)
+
+            if (stateMachine.currentState == State.ERROR)
+                break
+        }
+
+        return stateMachine.currentState == State.HALT
     }
 }

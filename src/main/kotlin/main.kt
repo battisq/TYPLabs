@@ -1,9 +1,7 @@
-import lab1.ArithmeticExpressionConverter
-import lab1.validation.ArithmeticExpressionStateMachineValidator
-import lab1.validation.Validator
-import java.util.*
+import lab1.validation.StateMachineValidator
 
-fun main(args: Array<String>) {
+fun main() {
+/*
     val validator: Validator = ArithmeticExpressionStateMachineValidator()
     val converter = ArithmeticExpressionConverter()
     val exp = "   a = b + 3.25E+3  *(4+2)  "
@@ -16,6 +14,7 @@ fun main(args: Array<String>) {
             .split(" ")
     )
 
+*/
 
     /*println(validator.validationExpression("a = b + c"))
     println(validator.validationExpression("a = b1 + c"))
@@ -35,8 +34,12 @@ fun main(args: Array<String>) {
     test(stack)
     println(stack)*/
 
-}
 
-fun test(stack: Stack<Char>) {
-    stack.pop()
+    val validator = StateMachineValidator()
+    println(validator.isExpression("a = b1 + c"))
+    println(validator.isExpression("a = 2 + c"))
+    println(validator.isExpression("a = 2.85 + c"))
+    println(validator.isExpression("a=b+3.25E+3"))
+    println(validator.isExpression("a = b + (c+ 1)"))
+    println(validator.isExpression("a = (b + (c +1)) )"))
 }
