@@ -10,7 +10,7 @@ class StateMachineValidator : Validator {
         val haltExpression = "${expression}${end[0]}"
 
         for (el in haltExpression) {
-            stateMachine.moveNext(el)
+            stateMachine.moveNextState(el)
 
             if (stateMachine.currentState == State.ERROR)
                 break

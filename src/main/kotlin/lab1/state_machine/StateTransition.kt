@@ -4,7 +4,6 @@ import lab1.state_machine.StateTransition.TransitionState.*
 
 class StateTransition(
     val state: State,
-//    val deltaCell: DeltaCell,
     val symbols: List<Char>,
     private val transitionState: TransitionState,
 ) {

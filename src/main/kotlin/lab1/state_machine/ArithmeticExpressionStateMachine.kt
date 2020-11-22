@@ -93,7 +93,7 @@ class ArithmeticExpressionStateMachine: StateMachine() {
         }
     }
 
-    override fun getNext(symbol: Char): State {
+    override fun getNextState(symbol: Char): State {
         return getNextDeltaCell(symbol).state
     }
 
@@ -102,7 +102,7 @@ class ArithmeticExpressionStateMachine: StateMachine() {
         return transitions.getOrDefault(transition, DeltaCell(ERROR))
     }
 
-    override fun moveNext(symbol: Char): State {
+    override fun moveNextState(symbol: Char): State {
         val nextDeltaCell = getNextDeltaCell(symbol)
         currentState = nextDeltaCell.state
         nextDeltaCell.action?.invoke()
