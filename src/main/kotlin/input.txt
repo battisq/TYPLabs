@@ -1,0 +1,1 @@
+cost=q*(price+4*(x+y)*tax)

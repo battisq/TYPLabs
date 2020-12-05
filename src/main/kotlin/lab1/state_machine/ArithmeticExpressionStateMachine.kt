@@ -1,112 +1,154 @@
 package lab1.state_machine
 
 import lab1.state_machine.State.*
-import lab1.state_machine.StateTransition.TransitionState.*
+import lab1.util.Action
+import lab1.util.DeltaCell
+import lab1.util.end
+import java.lang.StringBuilder
 import java.util.*
 
-class ArithmeticExpressionStateMachine: StateMachine() {
-    var stack: Stack<Char> = Stack()
-        private set
+class ArithmeticExpressionStateMachine {
     var currentState: State = _0
-        private set
 
-    override val transitions = HashMap<StateTransition, DeltaCell>().apply {
-        this[StateTransition(_0, letters, TABLE)] = DeltaCell(_1, stack)
-        this[StateTransition(_0, whitespace, TABLE)] = DeltaCell(_0, stack)
+    private var stack: Stack<Char> = Stack()
+    private val rpn: MutableList<String> = mutableListOf()
+    private val stackOp: Stack<Char> = Stack()
+    private val element: StringBuilder = StringBuilder()
 
-        this[StateTransition(_1, letters, TABLE)] = DeltaCell(_1, stack)
-        this[StateTransition(_1, digits, TABLE)] = DeltaCell(_1, stack)
-        this[StateTransition(_1, whitespace, TABLE)] = DeltaCell(_2, stack)
-        this[StateTransition(_1, equal, TABLE)] = DeltaCell(_3, stack)
+    private val actions: List<Action> = mutableListOf<Action>().apply {
+        // (
+        this.add(object : Action {
+            override fun action(el: Char) {
+                stackOp.push(el)
+                stack.push(el)
+            }
+        })
 
-        this[StateTransition(_2, whitespace, TABLE)] = DeltaCell(_2, stack)
-        this[StateTransition(_2, equal, TABLE)] = DeltaCell(_3, stack)
+        // )
+        this.add(object : Action {
+            override fun action(el: Char) {
+                if (stack.isEmpty()) {
+                    currentState = ERROR
 
-        this[StateTransition(_3, letters, TABLE)] = DeltaCell(_10, stack)
-        this[StateTransition(_3, digits, TABLE)] = DeltaCell(_4, stack)
-        this[StateTransition(_3, whitespace, TABLE)] = DeltaCell(_3, stack)
-        this[StateTransition(_3, openingBracket, TABLE)] = DeltaCell(_3, stack) {
-            stack.push(openingBracket[0])
-        }
+                    return
+                } else {
+                    if (element.toString() != "") {
+                        rpn.add(element.toString())
+                        element.clear()
+                    }
 
-        this[StateTransition(_4, digits, TABLE)] = DeltaCell(_4, stack)
-        this[StateTransition(_4, whitespace, TABLE)] = DeltaCell(_11, stack)
-        this[StateTransition(_4, operation, TABLE)] = DeltaCell(_3, stack)
-        this[StateTransition(_4, point, TABLE)] = DeltaCell(_5, stack)
-        this[StateTransition(_4, end, TABLE)] = DeltaCell(HALT, stack)
-        this[StateTransition(_4, closingBracket, TABLE)] = DeltaCell(_11, stack) {
-            if (stack.isEmpty())
-                currentState = ERROR
-            else
-                stack.pop()
-        }
+                    stack.pop()
 
-        this[StateTransition(_5, digits, TABLE)] = DeltaCell(_6, stack)
+                    while (stackOp.peek() != '(')
+                        rpn.add(stackOp.pop().toString())
 
-        this[StateTransition(_6, digits, TABLE)] = DeltaCell(_6, stack)
-        this[StateTransition(_6, whitespace, TABLE)] = DeltaCell(_11, stack)
-        this[StateTransition(_6, operation, TABLE)] = DeltaCell(_3, stack)
-        this[StateTransition(_6, logarithmicSymbol, TABLE)] = DeltaCell(_7, stack)
-        this[StateTransition(_6, end, TABLE)] = DeltaCell(HALT, stack)
-        this[StateTransition(_6, closingBracket, TABLE)] = DeltaCell(_11, stack) {
-            if (stack.isEmpty())
-                currentState = ERROR
-            else
-                stack.pop()
-        }
+                    stackOp.pop()
+                }
+            }
+        })
 
-        this[StateTransition(_7, logarithmicSigns, TABLE)] = DeltaCell(_8, stack)
+        // + || * || =
+        this.add(object : Action {
+            override fun action(el: Char) {
+                if (element.toString() != "") {
+                    rpn.add(element.toString())
+                    element.clear()
+                }
+                when {
+                    stackOp.isEmpty() -> stackOp.push(el)
+                    getPriority(stackOp.peek()) >= getPriority(el) -> {
+                        while (getPriority(stackOp.peek()) >= getPriority(el)) {
+                            rpn.add(stackOp.pop().toString())
+                        }
 
-        this[StateTransition(_8, digits, TABLE)] = DeltaCell(_9, stack)
+                        stackOp.push(el)
+                    }
+                    else -> stackOp.push(el)
+                }
+            }
+        })
 
-        this[StateTransition(_9, digits, TABLE)] = DeltaCell(_9, stack)
-        this[StateTransition(_9, whitespace, TABLE)] = DeltaCell(_11, stack)
-        this[StateTransition(_9, operation, TABLE)] = DeltaCell(_3, stack)
-        this[StateTransition(_9, end, TABLE)] = DeltaCell(HALT, stack)
-        this[StateTransition(_9, closingBracket, TABLE)] = DeltaCell(_11, stack) {
-            if (stack.isEmpty())
-                currentState = ERROR
-            else
-                stack.pop()
-        }
+        // letter, digits, +, -, E, e
+        this.add(object : Action {
+            override fun action(el: Char) {
+                element.append(el)
+            }
+        })
+    }
 
-        this[StateTransition(_10, letters, TABLE)] = DeltaCell(_10, stack)
-        this[StateTransition(_10, digits, TABLE)] = DeltaCell(_10, stack)
-        this[StateTransition(_10, whitespace, TABLE)] = DeltaCell(_11, stack)
-        this[StateTransition(_10, operation, TABLE)] = DeltaCell(_3, stack)
-        this[StateTransition(_10, end, TABLE)] = DeltaCell(HALT, stack)
-        this[StateTransition(_10, closingBracket, TABLE)] = DeltaCell(_11, stack) {
-            if (stack.isEmpty())
-                currentState = ERROR
-            else
-                stack.pop()
-        }
+    private val matrixAction: Array<Array<Action?>> = Array(12) { i ->
+        Array(12) { j ->
+            when {
+                i == 3 && j == 4 -> actions[0]
 
-        this[StateTransition(_11, whitespace, TABLE)] = DeltaCell(_11, stack)
-        this[StateTransition(_11, operation, TABLE)] = DeltaCell(_3, stack)
-        this[StateTransition(_11, end, TABLE)] = DeltaCell(HALT, stack)
-        this[StateTransition(_11, closingBracket, TABLE)] = DeltaCell(_11, stack) {
-            if (stack.isEmpty())
-                currentState = ERROR
-            else
-                stack.pop()
+                j == 5 && (i == 4 || i == 6 || i == 9 || i == 10 || i == 11) -> actions[1]
+
+                j == 3 && (i == 1 || i == 2)
+                        || j == 6 && (i == 4 || i == 6 || i == 9 || i == 10 || i == 11)
+                        || j == 7 && (i == 4 || i == 6 || i == 9 || i == 10 || i == 11) ->
+                    actions[2]
+
+
+                j == 0 && (i == 0 || i == 1 || i == 3 || i == 10)
+                        || j == 1 && (i == 1 || i == 3 || i == 4 || i == 5 || i == 6 || i == 8 || i == 9 || i == 10)
+                        || j == 6 && i == 7
+                        || j == 8 && i == 7
+                        || j == 9 && i == 4
+                        || j == 10 && i == 6 -> actions[3]
+
+                else -> null
+            }
         }
     }
 
-    override fun getNextState(symbol: Char): State {
+    private val matrix = TransitionMatrix.create(matrixAction)
+
+    fun getNextState(symbol: Char): State {
         return getNextDeltaCell(symbol).state
     }
 
-    override fun getNextDeltaCell(symbol: Char): DeltaCell {
-        val transition = StateTransition(currentState, listOf(symbol), INPUT)
-        return transitions.getOrDefault(transition, DeltaCell(ERROR))
+    private fun getNextDeltaCell(symbol: Char): DeltaCell {
+        return matrix[currentState, symbol]
     }
 
-    override fun moveNextState(symbol: Char): State {
+    fun moveNextState(symbol: Char): State {
         val nextDeltaCell = getNextDeltaCell(symbol)
+        nextDeltaCell.action?.action(symbol)
         currentState = nextDeltaCell.state
-        nextDeltaCell.action?.invoke()
+
+        if (currentState == HALT) {
+            if (element.toString() != "") {
+                rpn.add(element.toString())
+            }
+            while (!stackOp.isEmpty()) {
+                rpn.add(stackOp.pop().toString())
+            }
+        }
+
         return currentState
     }
-}
 
+    private fun getPriority(symbol: Char): Int = when (symbol) {
+        '=' -> 0
+        '(', ')' -> 1
+        '+' -> 2
+        '*' -> 3
+        else -> throw IllegalArgumentException("This symbol isn't ")
+    }
+
+    fun getRPN(expression: String): List<String> {
+        val haltExpression = "${expression}${end[0]}"
+
+        for (el in haltExpression) {
+            moveNextState(el)
+
+            if (currentState == ERROR)
+                break
+        }
+
+        if (currentState != HALT)
+            throw Exception()
+
+        return rpn
+    }
+}

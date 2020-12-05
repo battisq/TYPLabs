@@ -1,4 +1,4 @@
-package lab1.state_machine
+package lab1.util
 
 val operation: List<Char> = listOf('+', '*')
 val logarithmicSigns = listOf('+', '-')

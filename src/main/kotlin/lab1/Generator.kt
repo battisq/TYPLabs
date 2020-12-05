@@ -1,12 +1,80 @@
 package lab1
 
-import lab1.state_machine.digits
-import lab1.state_machine.letters
+import lab1.util.digits
+import lab1.util.equal
+import lab1.util.letters
+import lab1.util.operation
 import lab1.tree.TokenTree
 import java.util.*
-import kotlin.collections.ArrayList
+import kotlin.math.max
 
-class CodeGenerator {
+class Generator {
+    fun generateTable(splitExp: List<String>): String {
+        val parameterNames = splitExp.filter {
+            it != "(" && it != ")" && it != "*" && it != "+" && it != "="
+        }
+
+        var i = 1
+
+        return parameterNames.map {
+            String.format(
+                "%2d %7s\t\t%s",
+                i++,
+                it,
+                if (letters.contains(it[0]))
+                    "Переменная с плавающей точкой"
+                else
+                    "Константа с плавающей точкой"
+            )
+        }.joinToString("\n")
+    }
+
+    fun generateTree(expressionRPN: List<String>): TokenTree {
+        val stack = Stack<TokenTree>()
+
+        expressionRPN.forEach {
+            if (digits.contains(it[0]) || letters.contains(it[0]))
+                stack.push(TokenTree(oper = it, left = null, right = null))
+            else if (operation.contains(it[0]) || equal.contains(it[0])) {
+                val last = stack.pop()
+                val preLast = stack.pop()
+                val operToken = TokenTree(oper = it, left = preLast, right = last)
+                stack.push(operToken)
+            }
+        }
+
+        val tree = stack.pop()
+        val maxLevel = setLevels(tree)
+        invertLevels(tree, maxLevel + 1)
+
+        return tree
+    }
+
+    private fun setLevels(tree: TokenTree, level: Int = 0): Int {
+        if (tree.right == null && tree.left == null)
+            return 0
+
+        var max = level
+
+        max = max(max, setLevels(tree.right!!, level + 1))
+        max = max(max, setLevels(tree.left!!, level + 1))
+
+        tree.level = level
+
+        return max
+    }
+
+    private fun invertLevels(tree: TokenTree, maxLevel: Int) {
+        if (tree.left == null && tree.right == null) {
+            tree.level = 0
+            return
+        }
+
+        invertLevels(tree.right!!, maxLevel)
+        tree.level = maxLevel - tree.level
+        invertLevels(tree.left!!, maxLevel)
+    }
+
     fun generateUnoptimizedCode(tree: TokenTree?) {
         if (tree != null) {
 
@@ -51,12 +119,6 @@ class CodeGenerator {
         }
     }
 
-    fun generateUnoptimizedCode(expressionRPN: List<String>): String {
-
-
-        return ""
-    }
-
     fun generateOptimizedCode(unoptimizedCode: String): String {
         val splitCode = unoptimizedCode.split("\n")
         val code: LinkedList<MutableList<String>> = LinkedList(splitCode.map {
@@ -65,39 +127,6 @@ class CodeGenerator {
                 .split(" ")
                 .toMutableList()
         })
-
-        /*     for (i in code.indices) {
-                 if (i < code.size - 1
-                     && code[i][0].contains("LOAD")
-                     && code[i + 1][0].contains("ADD")
-                 ) {
-                     code[i][0].replace("LOAD", "ADD")
-                     code[i][0].replace("ADD", "LOAD")
-                     Collections.swap(code, i, i + 1)
-                 } else if (i < code.size - 1
-                     && code[i][0].contains("LOAD")
-                     && code[i + 1][0].contains("MPY")
-                 ) {
-                     code[i][0].replace("LOAD", "MPY")
-                     code[i][0].replace("MPY", "LOAD")
-                     Collections.swap(code, i, i + 1)
-                 } else if (i < code.size - 1
-                     && code[i][0] == "STORE"
-                     && code[i + 1][0] == "LOAD"
-                     && code[i][1] == code[i + 1][1]
-                 ) {
-                     code.removeAt(i)
-                     code.removeAt(i + 1)
-                 } else if (i < code.size - 2
-                     && code[i][0] == "LOAD"
-                     && code[i + 1][0] == "STORE"
-                     && code[i + 2][0] == "LOAD"
-                 ) {
-                     code.removeAt(i)
-                     code.removeAt(i + 1)
-                 }
-
-             }*/
 
         for (i in code.indices) {
             if (i < code.size - 1
