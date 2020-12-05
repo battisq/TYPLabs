@@ -146,8 +146,8 @@ class ArithmeticExpressionStateMachine {
                 break
         }
 
-        if (currentState != HALT)
-            throw Exception()
+        if (currentState != HALT || !stack.isEmpty())
+            throw IllegalArgumentException()
 
         return rpn
     }
