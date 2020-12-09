@@ -10,7 +10,8 @@ import java.util.*
 class ArithmeticExpressionStateMachine {
     var currentState: State = _0
 
-    private var stack: Stack<Char> = Stack()
+    var stack: Stack<Char> = Stack()
+        private set
     private val rpn: MutableList<String> = mutableListOf()
     private val stackOp: Stack<Char> = Stack()
     private val element: StringBuilder = StringBuilder()
@@ -128,14 +129,6 @@ class ArithmeticExpressionStateMachine {
         return currentState
     }
 
-    private fun getPriority(symbol: Char): Int = when (symbol) {
-        '=' -> 0
-        '(', ')' -> 1
-        '+' -> 2
-        '*' -> 3
-        else -> throw IllegalArgumentException("This symbol isn't ")
-    }
-
     fun getRPN(expression: String): List<String> {
         val haltExpression = "${expression}${end[0]}"
 
@@ -150,5 +143,15 @@ class ArithmeticExpressionStateMachine {
             throw IllegalArgumentException()
 
         return rpn
+    }
+
+    companion object {
+        fun getPriority(symbol: Char): Int = when (symbol) {
+            '=' -> 0
+            '(', ')' -> 1
+            '+' -> 2
+            '*' -> 3
+            else -> throw IllegalArgumentException("This symbol isn't ")
+        }
     }
 }

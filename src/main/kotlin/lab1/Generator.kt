@@ -1,10 +1,8 @@
 package lab1
 
-import lab1.util.digits
-import lab1.util.equal
-import lab1.util.letters
-import lab1.util.operation
+import lab1.state_machine.ArithmeticExpressionStateMachine
 import lab1.tree.TokenTree
+import lab1.util.*
 import java.util.*
 import kotlin.math.max
 
@@ -27,6 +25,42 @@ class Generator {
                     "Константа с плавающей точкой"
             )
         }.joinToString("\n")
+    }
+
+    // infix to reverse polish notation (postfix)
+    fun generateRPN(splitExp: List<String>): List<String> {
+        val op: Stack<String> = Stack()
+        val resultExp = mutableListOf<String>()
+
+        for ((index, value) in splitExp.withIndex()) {
+            when {
+                digits.contains(value[0]) -> resultExp.add(value)
+                letters.contains(value[0]) -> resultExp.add(value)
+                operation.contains(value[0]) || equal.contains(value[0]) -> when {
+                    op.isEmpty() -> op.push(value)
+                    getPriority(op.peek()) >= getPriority(value) -> {
+                        while(getPriority(op.peek()) >= getPriority(value)) {
+                            resultExp.add(op.pop())
+                        }
+
+                        op.push(value)
+                    }
+                    else -> op.push(value)
+                }
+                openingBracket.contains(value[0]) -> op.push(value)
+                closingBracket.contains(value[0]) -> {
+                    while (op.peek() != "(")
+                        resultExp.add(op.pop())
+
+                    op.pop()
+                }
+            }
+        }
+
+        while (!op.isEmpty())
+            resultExp.add(op.pop())
+
+        return resultExp
     }
 
     fun generateTree(expressionRPN: List<String>): TokenTree {
@@ -194,5 +228,13 @@ class Generator {
             else
                 "${it[0]}\t${it[1]}"
         }.joinToString("\n")
+    }
+
+    fun getPriority(symbol: String): Int = when (symbol[0]) {
+        '=' -> 0
+        '(', ')' -> 1
+        '+' -> 2
+        '*' -> 3
+        else -> throw IllegalArgumentException("This symbol isn't ")
     }
 }
