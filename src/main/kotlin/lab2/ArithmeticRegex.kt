@@ -7,45 +7,47 @@ import java.util.regex.Pattern
 
 class ArithmeticRegex {
     private val regex: Regex
-    private val stateMachine: ArithmeticExpressionStateMachine
-
+    private val groupsReg: Regex
     init {
         val regexNumber: String = "(\\d+\\.?\\d*)"
         val regexNumberLog: String = "(\\d+\\.\\d+[Ee][+-]\\d+)"
         val regexVar: String = "(\\s*[A-Za-z_][A-Za-z0-9_]*\\s*)"
-        val regexOperand = "(?:$regexNumberLog|$regexNumber|$regexVar)"
+        val regexOperand = "($regexNumberLog|$regexNumber|$regexVar)"
         val regexOp: String = "(\\+|\\*)"
-        val groups: String =
+        val groupsEl =
             "(?:$regexOperand" +
                     "|$regexOp" +
                     "|(\\()" +
                     "|(\\))" +
                     "|(=)" +
-            ")"
+                    ")"
 
-        // TODO
         /**
          * Рабочий регекс (Из C#)
          * @"^((?<var>\s*[A-Za-z_][A-Za-z0-9_]*\s*))(=)(\s*(?<open>\()\s*)*(?<operand>\s*((\d+\.\d+[Ee][+-]\d+)|(\d+\.?\d*)|([A-Za-z_][A-Za-z0-9_]*))\s*)(?<rec>\s*(?<op>\+|\*)\s*(\s*(?<open>\()\s*)*(?<operand>\s*((\d+\.?\d+[Ee][+-]\d+)|(\d+\.?\d*)|([A-Za-z_][A-Za-z0-9_]*))\s*)\s*(?<-open>\)\s*)*)+(?(open)(?!))"
          */
-        regex = Regex(groups)
-        stateMachine = ArithmeticExpressionStateMachine()
+
+        groupsReg = Regex(pattern = groupsEl)
+        regex =
+            Regex(pattern = "^$regexVar(=)(\\s*(?<open>\\()\\s*)*\\s*$regexOperand\\s*(?:\\s*$regexOp\\s*(\\s*(?<open1>\\()\\s*)*\\s*$regexOperand\\s*\\s*(?<close>\\)\\s*)*)+")
     }
 
     fun isExpression(expression: String): Boolean {
-        val haltExpression = "${expression}${end[0]}"
-
-        for (el in haltExpression) {
-            stateMachine.moveNextState(el)
-
-            if (stateMachine.currentState == State.ERROR)
-                return false
-        }
-
-        if (stateMachine.currentState != State.HALT || !stateMachine.stack.isEmpty())
+        if (!regex.matches(expression))
             return false
 
-        return true
+        with(Regex(pattern = "([()])").findAll(expression)) {
+            var stack: Int = 0
+
+            forEach {
+                if (it.value == "(")
+                    stack++
+                else
+                    stack--
+            }
+
+            return stack == 0
+        }
     }
 
     fun getGroups(expression: String): List<String> {

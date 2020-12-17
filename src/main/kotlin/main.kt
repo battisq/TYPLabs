@@ -24,8 +24,11 @@ fun main() {
 //<editor-fold desc="Lab 2">
     val regex: ArithmeticRegex = ArithmeticRegex()
 
-    if (!regex.isExpression(exp))
-        throw IllegalArgumentException()
+    if (!regex.isExpression(exp)) {
+        println("Failure")
+        return
+    }
+
 
     val splitExp: List<String> = regex.getGroups(exp)
     val rpn = generator.generateRPN(splitExp)
